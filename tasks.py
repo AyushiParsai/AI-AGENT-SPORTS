@@ -40,7 +40,7 @@ Include:
 Focus on practical cricket match tactics.
 """,
     expected_output="Detailed match strategies and tactics",
-    agent=strategy_agent
+    agent=strategy_agent 
 )
 
 

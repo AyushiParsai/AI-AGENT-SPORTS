@@ -1,0 +1,42 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH key
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          
+          if [ ! -d "AI-AGENT-SPORTS" ]; then
+            git clone https://github.com/AyushiParsai/AI-AGENT-SPORTS.git
+          fi
+
+          cd AI-AGENT-SPORTS
+          git pull
+
+          docker stop $(docker ps -aq) || true
+          docker rm $(docker ps -aq) || true
+
+          docker build -t sports-app .
+
+          docker run -d -p 8501:8501 \
+          -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+          -e OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }} \
+          --name sports-container sports-app
+
+          EOF
